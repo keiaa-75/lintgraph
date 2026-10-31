@@ -50,8 +50,8 @@ Build the project shell so everything else has a place to live, with good UX fro
 
 - Cargo workspace with the crates from `structure.md` (stubs where needed).
 - CLI with `lintgraph check`, `lintgraph init`, `lintgraph clean`, and `lintgraph config check` and `show`.
-- Project root discovery, and `.lintgraph/` creation with its self-ignoring `.gitignore`.
-- Config loading: zero-config defaults, `lintgraph.toml`, `[tool.lintgraph]` in `pyproject.toml`, strict validation with line numbers and "did you mean" suggestions.
+- Project root discovery (nearest `lintgraph.toml`), `lintgraph init`, and `.lintgraph/` creation with its self-ignoring `.gitignore`.
+- Config loading: `lintgraph.toml` with defaults for everything omitted, strict validation with line numbers and "did you mean" suggestions.
 - File walker honoring `.gitignore`, always skipping `.lintgraph/`.
 - Change detection: size and modified time first, then content hash.
 - SQLite setup: pragmas, `user_version` schema marker, rebuild on mismatch, a `files` table.

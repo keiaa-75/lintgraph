@@ -70,8 +70,8 @@ Optimization is a design constraint from the start.
 ## Configuration philosophy
 
 - **Convention over configuration.** Defaults, presets, and rule metadata live in code. The user's configs holds only deviations.
-- **Zero-config start.** `lintgraph check` works without a config file; it detects Python, finds source roots (such as `src/`), and applies the recommended preset.
-- **Format:** TOML. `lintgraph.toml` at the project root, with `[tool.lintgraph]` in `pyproject.toml` also accepted for Python projects.
+- **Zero-config start.** An empty `lintgraph.toml` is a complete configuration: `lintgraph check` detects Python, finds source roots (such as `src/`), and applies the recommended preset. `lintgraph init` creates the file.
+- **Format:** TOML, in `lintgraph.toml` at the project root. Embedding config in other files (such as `[tool.lintgraph]` in `pyproject.toml`) may come later as an additive change.
 - **Schema from code.** Config types are Rust structs. The JSON schema is generated from them and published as a build artifact for editor autocompletion and validation.
 - **Settings and rules are separate.** `lintgraph.toml` holds project facts and overrides. Rule logic lives in code (core rules and language packs), so new rules do not add keys to user files.
 - **Two classes of rules.** Universal rules (unresolved imports, cycles) rely on defaults. Project-specific rules (layering, custom conventions) are configuration by nature, and growth concentrates there.
@@ -98,7 +98,7 @@ Good tooling from the earliest releases is a requirement.
 - **JSON output:** stable and versioned (`format-version`). Fields include file, line, column, rule, severity, and message. Never break the schema without bumping the version.
 - **Errors:** actionable messages that say what happened, why, and what to try. No raw stack traces for expected failures.
 - **Speed of `--help`:** it should feel instant.
-- **Project root discovery:** walk upward to find `lintgraph.toml` or `.git`.
+- **Project root discovery:** walk upward from the current directory to the nearest `lintgraph.toml`. Its directory is the project root, and `.lintgraph/` is created beside it. If no `lintgraph.toml` is found, exit `2` with a message suggesting `lintgraph init`. Git is never required.
 - **Concurrency:** safe when several invocations run at once.
 
 ## Python adapter (first language pack)

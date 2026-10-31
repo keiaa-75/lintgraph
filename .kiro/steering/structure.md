@@ -21,7 +21,7 @@ The process exits only after reporting. The graph on disk is only state, and it 
 
 ## Fundamental concepts
 
-- **Project root:** the directory containing `lintgraph.toml` or `.git`. All paths are relative to it.
+- **Project root:** the directory containing `lintgraph.toml`. All paths are relative to it.
 - **Source file:** a file matched by an adapter, identified by path and content hash.
 - **Change set:** the files added, modified, or deleted since the last run.
 - **Affected set:** the change set plus every file whose resolution can depend on it: files that import a changed file, and files with unresolved imports that a new or renamed file might now satisfy. This is what gets re-resolved and what `--changed-only` reports on.

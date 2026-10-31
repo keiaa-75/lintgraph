@@ -28,6 +28,7 @@ The cache is disposable and rebuilt from source whenever needed. Lintgraph only 
 ## Planned usage
 
 ```sh
+lintgraph init                    # create lintgraph.toml in the project root
 lintgraph check                   # check the project
 lintgraph check --changed-only    # report on what a change touched or broke
 lintgraph check --format json     # structured output for agents and CI
