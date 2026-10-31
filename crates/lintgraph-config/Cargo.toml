@@ -1,0 +1,14 @@
+[package]
+name = "lintgraph-config"
+description = "Config schema, loading, presets, and validation for Lintgraph"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+lintgraph-core.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,18 @@
+[package]
+name = "lintgraph"
+description = "Fast, project-aware static checker that runs, reports, and exits"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+lintgraph-core.workspace = true
+lintgraph-config.workspace = true
+lintgraph-rules.workspace = true
+lintgraph-python-pack.workspace = true
+lintgraph-report.workspace = true
+
+[lints]
+workspace = true

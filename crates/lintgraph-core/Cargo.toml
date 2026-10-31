@@ -1,0 +1,11 @@
+[package]
+name = "lintgraph-core"
+description = "Graph store, change detection, adapter trait, and rule engine for Lintgraph"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
