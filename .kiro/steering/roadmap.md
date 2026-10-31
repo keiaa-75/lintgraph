@@ -1,7 +1,7 @@
 ---
 inclusion: auto
 name: roadmap
-description: Lintel's phased prototype plan (Phases 0 to 4), deliverables, done-when checks, post-prototype ideas, and risks. Use when planning work, choosing what to build next, or implementing a roadmap deliverable.
+description: Lintgraph's phased prototype plan (Phases 0 to 4), deliverables, done-when checks, post-prototype ideas, and risks. Use when planning work, choosing what to build next, or implementing a roadmap deliverable.
 ---
 
 # Roadmap
@@ -21,11 +21,12 @@ Settle the choices that everything else depends on, and write them down.
 
 **Decided**
 
-- Implementation language: Rust. First language pack: Python (`lintel-python-pack`).
-- Language support ships as `lintel-<language>-pack` crates, each bundling the adapter and that language's rules, compiled in through Cargo features.
+- Implementation language: Rust. First language pack: Python (`lintgraph-python-pack`).
+- Language support ships as `lintgraph-<language>-pack` crates, each bundling the adapter and that language's rules, compiled in through Cargo features.
 - Storage: SQLite (bundled), used as a disposable cache.
 - Config: TOML, with defaults in code and a published JSON Schema.
-- Project name: Lintel. Registry name: `lintel-graph`. Command: `lintel`. License: MIT.
+- Project name: Lintgraph. Registry name: `lintgraph`. Command: `lintgraph`. License: MIT.
+- Rules come in three tiers: core rules (built-in, language-agnostic), language rules (inside each language pack), and external rule packs (later), which add more language-specific and convention rules.
 - First rules: `python/unresolved-import`, `core/circular-import`, `python/unreferenced-symbol`.
 - Python imports are classified as internal, stdlib, or third-party. Only unresolved internal imports are errors.
 - Platforms: Linux, macOS, and Windows from the start.
@@ -33,7 +34,7 @@ Settle the choices that everything else depends on, and write them down.
 
 **To finalize in this phase**
 
-- Confirm that the name `lintel-graph` is free on crates.io (`lintel-check` was found to be taken), and note GitHub and domain availability.
+- Reserve `lintgraph` on crates.io. It was free on crates.io, PyPI, and npm as of October 2026; the original name `lintel` collided with an existing crate, binary, and `lintel.toml` config. Check domain availability.
 - Graph schema v0 on paper (see `structure.md`).
 - Language pack interface (adapter plus rule registration) and the resolver's inputs and outputs.
 - Finding JSON format v1 and the rule ID scheme.
@@ -48,25 +49,25 @@ Build the project shell so everything else has a place to live, with good UX fro
 **Deliverables**
 
 - Cargo workspace with the crates from `structure.md` (stubs where needed).
-- CLI with `lintel check`, `lintel init`, `lintel clean`, and `lintel config check` and `show`.
-- Project root discovery, and `.lintel/` creation with its self-ignoring `.gitignore`.
-- Config loading: zero-config defaults, `lintel.toml`, `[tool.lintel]` in `pyproject.toml`, strict validation with line numbers and "did you mean" suggestions.
-- File walker honoring `.gitignore`, always skipping `.lintel/`.
+- CLI with `lintgraph check`, `lintgraph init`, `lintgraph clean`, and `lintgraph config check` and `show`.
+- Project root discovery, and `.lintgraph/` creation with its self-ignoring `.gitignore`.
+- Config loading: zero-config defaults, `lintgraph.toml`, `[tool.lintgraph]` in `pyproject.toml`, strict validation with line numbers and "did you mean" suggestions.
+- File walker honoring `.gitignore`, always skipping `.lintgraph/`.
 - Change detection: size and modified time first, then content hash.
 - SQLite setup: pragmas, `user_version` schema marker, rebuild on mismatch, a `files` table.
 - Error type conventions and readable error messages.
 - CI on Linux, macOS, and Windows, with `rustfmt`, `clippy`, and tests.
 - Benchmark harness and the chosen fixture repositories.
 
-**Done when:** `lintel check` on a Python project scans files, detects changes, and persists the file table. A second run reports nothing changed and meets the warm-run target. CI is green on all three platforms.
+**Done when:** `lintgraph check` on a Python project scans files, detects changes, and persists the file table. A second run reports nothing changed and meets the warm-run target. CI is green on all three platforms.
 
 ## Phase 2: Adapter
 
-Teach Lintel to read Python, and fill the graph.
+Teach Lintgraph to read Python, and fill the graph.
 
 **Deliverables**
 
-- Language pack interface and adapter trait in `lintel-core`, and the Python adapter inside `lintel-python-pack`.
+- Language pack interface and adapter trait in `lintgraph-core`, and the Python adapter inside `lintgraph-python-pack`.
 - tree-sitter parsing for Python, tolerant of syntax errors (flag the file, continue).
 - Extraction of module-level symbols (functions, classes, constants) and imports (absolute, relative, aliased, `from` imports, `__all__`).
 - Extraction of name references: every use of a name in load context, plus attribute access on imported modules (`mod.foo`). Stored unresolved, with name, line, and column. Phase 3 resolves them to symbols.
@@ -88,12 +89,13 @@ Connect the pieces: resolve imports across the project and run the first rules.
 - Import classification (internal, stdlib, third-party, undeclared) using a bundled stdlib module list for Python 3.9 and later and the dependencies declared in `pyproject.toml`.
 - Resolution of extracted name references to symbols, so `python/unreferenced-symbol` can count uses within a module as well as across modules.
 - Honest "unknown" results for dynamic imports and unsupported patterns.
-- Rule engine in `lintel-core`: rule metadata, typed options, severity, execution of query-based rules, and registration of rules from language packs and `lintel-rules`.
-- First rules (`python/` rules live in `lintel-python-pack`, `core/` rules in `lintel-rules`):
+- Affected-set computation in `lintgraph-core`: expand the change set to files that import a changed file and to files with unresolved imports a new file might satisfy, then re-resolve all of them.
+- Rule engine in `lintgraph-core`: rule metadata, typed options, severity, execution of rules (indexed queries plus Rust logic, including in-memory graph algorithms), and registration of core rules from `lintgraph-rules` and language rules from language packs.
+- First rules (`python/` rules live in `lintgraph-python-pack`, `core/` rules in `lintgraph-rules`):
   - `python/unresolved-import`: internal imports that resolve to nothing (error), and undeclared imports that match no internal module, stdlib module, or declared dependency (warning).
-  - `core/circular-import`: import cycles between modules.
-  - `python/unreferenced-symbol`: module-level definitions that nothing references. This ships conservative and documented, with exemptions for `__all__`, decorators, entry points, and test conventions. It is marked experimental in `lintel explain`. It can move to a later phase without blocking the others if the false-positive rate is too high.
-- Fixture projects for each rule, including tricky cases (re-exports, `__init__.py` imports, conditional imports).
+  - `core/circular-import`: import cycles between modules, found as strongly connected components over the import edges. Each cycle is reported once, with the other modules as related locations.
+  - `python/unreferenced-symbol`: module-level definitions that nothing references. This ships conservative and documented, with exemptions for `__all__`, decorators, entry points, and test conventions. It is marked experimental in `lintgraph explain`. It can move to a later phase without blocking the others if the false-positive rate is too high.
+- Fixture projects for each rule, including tricky cases (re-exports, `__init__.py` imports, conditional imports), and incremental cases where an edit breaks or repairs an unchanged file.
 
 **Done when:** all three rules pass their fixture snapshots, and findings on the two reference repositories are manually triaged with acceptable noise, especially for `python/unresolved-import`.
 
@@ -107,13 +109,13 @@ Make the output genuinely usable by humans, hooks, CI, and agents.
 - JSON reporter: stable and versioned (`format-version: 1`).
 - SARIF output for tools that consume it.
 - Exit codes, `--fail-on <severity>`, `--quiet`, and `--verbose`.
-- `--changed-only` and explicit file-list arguments.
-- `lintel explain <rule-id>`.
-- Inline suppressions (`# lintel: ignore[rule-id]`) and `lintel baseline`.
+- `--changed-only` (findings in the affected set: changed files plus unchanged files the change broke) and explicit file-list arguments.
+- `lintgraph explain <rule-id>`.
+- Inline suppressions (`# lintgraph: ignore[rule-id]`) and `lintgraph baseline`.
 - Generated JSON Schema for the config, and a docs page for rules and configuration.
 - Example integrations: a git pre-commit hook and a post-edit command for an agent.
 
-**Done when:** Lintel is usable in a git hook and by an agent with no manual setup beyond installing it, and its output is stable enough to document.
+**Done when:** Lintgraph is usable in a git hook and by an agent with no manual setup beyond installing it, and its output is stable enough to document.
 
 ## After the prototype
 
@@ -122,13 +124,13 @@ Ordered roughly by value. Nothing here is committed until the earlier phases pro
 - Call edges and arity checks.
 - Architecture rules: layer definitions, forbidden dependencies, custom conventions (with the `include` option for large rule sets).
 - Deep tier: external type-checkers (pyright, ty, mypy) as diagnostic sources, normalized into findings and stored in the graph.
-- Read-only queries: `lintel refs <symbol>` and "what is affected if this changes?".
+- Read-only queries: `lintgraph refs <symbol>` and "what is affected if this changes?".
 - Optimization pass on schema, indexes, and queries, driven by benchmark data.
-- Optional `lintel watch` with debounced filesystem events, reusing the same pipeline.
+- Optional `lintgraph watch` with debounced filesystem events, reusing the same pipeline.
 - Thin editor integrations: SARIF and problem matchers first, then an extension or a small language-server wrapper that shells out to the CLI.
-- A second language pack (for example `lintel-typescript-pack`) to test the modularity of the core.
+- A second language pack (for example `lintgraph-typescript-pack`) to test the modularity of the core.
 - Move language packs into their own repositories once the pack interface and graph schema are stable and a second pack exists.
-- Shared rule sets and presets (declarative project rules distributed as files).
+- External rule packs and presets: extra language-specific rules and convention rules, distributed as files or crates and loaded on top of core rules and language packs.
 - Third-party import verification against a virtual environment.
 
 ## Risks
@@ -138,4 +140,4 @@ Ordered roughly by value. Nothing here is committed until the earlier phases pro
 - **Schema churn.** Mitigation: treat the schema as provisional, hide it behind the storage module, and rebuild the cache on version changes.
 - **Config growth.** Mitigation: the growth controls in `tech.md`, and tracking the size of typical configs.
 - **Scope creep toward an LSP.** Mitigation: the non-goals in `product.md`.
-- **Name availability.** Mitigation: confirm in Phase 0, and keep the binary name independent of the registry name.
+- **Name availability.** Mitigation: reserve `lintgraph` on crates.io in Phase 0, before anything public refers to it.

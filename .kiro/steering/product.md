@@ -1,18 +1,18 @@
 ---
 inclusion: auto
 name: product
-description: Lintel's problem statement, target users, design principles, goals, and non-goals. Use when proposing features, judging scope, or explaining why Lintel exists.
+description: Lintgraph's problem statement, target users, design principles, goals, and non-goals. Use when proposing features, judging scope, or explaining why Lintgraph exists.
 ---
 
 # Product Overview
 
 ## Summary
 
-Lintel is a fast, project-aware static checker. It runs on demand, checks a whole codebase through a persistent, queryable graph, reports its findings, and exits. It sits between a linter and a language server: it understands relationships across files, as an LSP does, but it keeps no resident process and no live-in memory model.
+Lintgraph is a fast, project-aware static checker. It runs on demand, checks a whole codebase through a persistent, queryable graph, reports its findings, and exits. It sits between a linter and a language server: it understands relationships across files, as an LSP does, but it keeps no resident process and no live in-memory model.
 
-- **Project name:** Lintel
-- **Registry (crates.io) name:** `lintel-graph`
-- **Command:** `lintel`
+- **Project name:** Lintgraph
+- **Registry (crates.io) name:** `lintgraph`
+- **Command:** `lintgraph`
 - **Implementation language:** Rust
 - **First supported language:** Python
 - **Status:** Prototype. Scope and schema are provisional unless stated otherwise.
@@ -29,7 +29,7 @@ Linters are cheap to run and easy to adopt: run, report, exit. Most of them reas
 - Layering violations, such as UI code importing the database layer.
 - Calls that no longer match a function's current signature.
 
-THe linters that do look across files (for example, Pylint, or typescript-eslint with type information) get much slower and heavier, which erodes the simplicity that made linters attractive.
+The linters that do look across files (for example, Pylint, or typescript-eslint with type information) get much slower and heavier, which erodes the simplicity that made linters attractive.
 
 ### Language servers are powerful, and heavy
 
@@ -39,15 +39,15 @@ Language servers are also designed for interactive editing: diagnostics on every
 
 ### AI-assisted development sharpens both problems
 
-Coding agents and automated workflows need a different kind of feedback: "did my edit break anything across the project?", asked once per edit, answered in structure form. They do not need hover documentation or keystroke-level updates. Linters cannot answer the question, and language servers answer it in an expensive, editor-shaped way. Memory pressure from large language servers and heavy editors also competes with the resources that local tooling and models need.
+Coding agents and automated workflows need a different kind of feedback: "did my edit break anything across the project?", asked once per edit, answered in structured form. They do not need hover documentation or keystroke-level updates. Linters cannot answer the question, and language servers answer it in an expensive, editor-shaped way. Memory pressure from large language servers and heavy editors also competes with the resources that local tooling and models need.
 
-There is a gap between "one file, shallow" and "whole project, heavy". Lintel is built for that gap.
+There is a gap between "one file, shallow" and "whole project, heavy". Lintgraph is built for that gap.
 
 ### Existing technologies and why they fall short
 
 | Category | Examples | Strength | Why it does not cover the gap |
 |---|---|---|---|
-| Linters | Ruff, Flake8, ESLint | Fast, simple, run-and-exit | Largely, file-oriented. Cannot see broken imports across modules, dead exports, cycles, or layering violations. Project-aware modes exist but are slow and heavy. |
+| Linters | Ruff, Flake8, ESLint | Fast, simple, run-and-exit | Largely file-oriented. Cannot see broken imports across modules, dead exports, cycles, or layering violations. Project-aware modes exist but are slow and heavy. |
 | Type-checkers and compilers in check mode | pyright, mypy, `tsc --noEmit`, `cargo check` | Authoritative on types | Re-analyze parts of the project on each run, need a working build or environment, stop at "does it type-check", offer no architecture or dead-code rules, and each has its own output format. |
 | Language servers | pyright and Pylance, jdtls, rust-analyzer, clangd | Rich, project-aware features | Resident processes holding a full semantic model, with heavy startup and memory costs. Built for interactive editing, which is the wrong shape for agents and CI. Tied to an editor. |
 | Code indexes | SCIP, LSIF | Cheap queries over precomputed symbols | Built for code navigation, not checking. No rule engine. |
@@ -59,12 +59,12 @@ None of these combine whole-project awareness, low resting cost, run-and-exit be
 
 ## Proposed solution
 
-Lintel builds a lightweight, persistent graph of a codebase (files, symbols, imports, and later call edges), runs rules as queries over that graph, and exits.
+Lintgraph builds a lightweight, persistent graph of a codebase (files, symbols, imports, and later call edges), runs rules as queries over that graph, and exits.
 
 1. **Parse** changed files with tree-sitter, which is fast, incremental, and tolerant of broken code.
 2. **Extract and resolve** symbols and relationships through a per-language adapter.
 3. **Store** the result in a SQLite graph on disk, updated incrementally from file hashes.
-4. **Query** the graph with rules (checks expressed as queries) grouped into shareable rule packs.
+4. **Check** the graph with rules: built-in core rules that work for any language, plus the rules in each language pack.
 5. **Report** in human-readable text and a stable, versioned JSON format, with meaningful exit codes.
 
 The process holds no state between runs. The graph on disk is the only memory, and it is a disposable cache that can always be rebuilt.
@@ -73,11 +73,11 @@ The process holds no state between runs. The graph on disk is the only memory, a
 
 - **Convention over configuration.** Sensible defaults live in code. Configuration holds only deviations from them.
 - **Fast by default.** Optimization is a design constraint from the start, not a later pass.
-- **Static analysis only.** Lintel never executes the code it checks.
+- **Static analysis only.** Lintgraph never executes the code it checks.
 - **Stateless process.** No daemon in the core. Something else (an editor, a hook, an agent, CI) invokes it.
-- **Honest about uncertainty.** When resolution is ambiguous, Lintel reports "unknown" instead of guessing.
-- **Modular.** Language adapters and rule packs are separable. The core knows nothing about any specific language.
-- **Read-only.** Lintel never modifies source files.
+- **Honest about uncertainty.** When resolution is ambiguous, Lintgraph reports "unknown" instead of guessing.
+- **Modular.** Each language ships as a separate language pack (adapter plus rules). The core knows nothing about any specific language.
+- **Read-only.** Lintgraph never modifies source files.
 - **Private.** No network access and no telemetry.
 
 ## Target users
@@ -104,29 +104,29 @@ The process holds no state between runs. The graph on disk is the only memory, a
 - A fast loop that catches errors before long builds or compounding mistakes.
 - No session state: a fresh sandbox can rebuild the graph from source.
 - Small, targeted reports instead of large compiler dumps, which saves tokens.
-- `--changed-only` and explicit file lists to focus on what an edit touched.
+- `--changed-only` and explicit file lists to focus on what an edit touched, including unchanged files the edit broke.
 
 ## Goals
 
 - Provide cross-file checks that linters cannot, at a fraction of an LSP's resting cost.
 - Make the first run useful with zero configuration.
-- Keep warm runs fast enoguh to run on every save, hook, or agent edit (targets are in `tech.md`).
+- Keep warm runs fast enough to run on every save, hook, or agent edit (targets are in `tech.md`).
 - Make adding a language (an adapter) or a rule (a query) a contained piece of work.
 - Offer excellent tooling and error messages from the earliest releases.
 
 ## Non-goals
 
-- **No editor features:** no completion, hover, rename, or refactoring. These need exact symbol resolution and live buffers, which are the costs Lintel avoids.
+- **No editor features:** no completion, hover, rename, or refactoring. These need exact symbol resolution and live buffers, which are the costs Lintgraph avoids.
 - **No custom type-checker:** existing type-checkers will later plug in as external diagnostic sources.
-- **No dynamic analysis:** Lintel does not run, trace, or profile programs.
+- **No dynamic analysis:** Lintgraph does not run, trace, or profile programs.
 - **No resident process in the core:** an optional watch mode may come later, as a separate opt-in feature.
-- **No source rewriting:** Lintel should not alter source code or auto-fix any flagged issues.
+- **No source rewriting:** Lintgraph should not alter source code or auto-fix any flagged issues.
 
-A later, read-only extension is likely, since the graph already holds the data: commands such as `lintel refs <symbol>` and "what is affected if this changes?".
+A later, read-only extension is likely, since the graph already holds the data: commands such as `lintgraph refs <symbol>` and "what is affected if this changes?".
 
 ## Success measures
 
-- A typical project's `lintel.toml` is empty or only a few lines. A long typical config means the defaults are wrong. Otherwise, a preset would be a much better case. 
+- A typical project's `lintgraph.toml` is empty or only a few lines. A long typical config means the defaults are wrong. If many projects need the same long config, it should become a preset.
 - Warm no-change and single-file-edit runs meet the performance targets in `tech.md`.
 - Findings on the reference Python projects are low-noise after manual triage.
 - A new language adapter does not require big changes to the core.
