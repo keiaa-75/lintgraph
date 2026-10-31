@@ -1,6 +1,6 @@
 # Lintgraph
 
-<p align="center">
+<p align="left">
     <img alt = "Rust" src="https://img.shields.io/badge/rust-%23F54A2A.svg?style=for-the-badge&logo=rust&logoColor=white"/>
     <img alt = "SQLite" src="https://img.shields.io/badge/sqlite-%235091CD.svg?style=for-the-badge&logo=sqlite&logoColor=white"/>
 </p>

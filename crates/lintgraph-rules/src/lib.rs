@@ -1,1 +1,1 @@
-//! Core rules (core/): language-agnostic checks over the project graph.
+//! Core rules (`core/`): language-agnostic checks over the project graph.

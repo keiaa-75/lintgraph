@@ -1,1 +1,1 @@
-//! Config schema, loading, presets, and validation for lintgraph.toml.
+//! Config schema, loading, presets, and validation for `lintgraph.toml`.
