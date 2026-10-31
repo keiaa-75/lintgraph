@@ -1,3 +1,9 @@
+---
+inclusion: auto
+name: roadmap
+description: Lintel's phased prototype plan (Phases 0 to 4), deliverables, done-when checks, post-prototype ideas, and risks. Use when planning work, choosing what to build next, or implementing a roadmap deliverable.
+---
+
 # Roadmap
 
 A phased plan for the prototype. The first five phases (0 to 4) define the prototype. Each phase has a "done when" check. Everything after Phase 4 is expansion on a modular base.
@@ -63,12 +69,13 @@ Teach Lintel to read Python, and fill the graph.
 - Language pack interface and adapter trait in `lintel-core`, and the Python adapter inside `lintel-python-pack`.
 - tree-sitter parsing for Python, tolerant of syntax errors (flag the file, continue).
 - Extraction of module-level symbols (functions, classes, constants) and imports (absolute, relative, aliased, `from` imports, `__all__`).
+- Extraction of name references: every use of a name in load context, plus attribute access on imported modules (`mod.foo`). Stored unresolved, with name, line, and column. Phase 3 resolves them to symbols.
 - Parallel per-file extraction with `rayon`, and serial batched writes in one transaction.
 - Incremental updates: replace only the changed files' rows, and handle deleted and renamed files.
-- `symbols` and `imports` tables, with indexes for the queries Phase 3 needs.
-- Fixture projects and snapshot tests for the extraction output.
+- `symbols`, `imports`, and `references` tables, with indexes for the queries Phase 3 needs.
+- Fixture projects and snapshot tests for the extraction output, including references used only within their own module.
 
-**Done when:** the graph for each fixture project is correct, editing one file re-extracts only that file, and an incremental graph matches a fresh full index.
+**Done when:** the graph for each fixture project is correct, including references, editing one file re-extracts only that file, and an incremental graph matches a fresh full index.
 
 ## Phase 3: Resolver and First Rules
 
@@ -78,11 +85,12 @@ Connect the pieces: resolve imports across the project and run the first rules.
 
 - Module-to-file mapping for flat and `src/` layouts, packages, and namespace packages.
 - Relative import resolution, and resolution of `from x import name` to a symbol where possible.
-- Import classification (internal, stdlib, third-party) using a bundled stdlib module list for Python 3.9 and later.
+- Import classification (internal, stdlib, third-party, undeclared) using a bundled stdlib module list for Python 3.9 and later and the dependencies declared in `pyproject.toml`.
+- Resolution of extracted name references to symbols, so `python/unreferenced-symbol` can count uses within a module as well as across modules.
 - Honest "unknown" results for dynamic imports and unsupported patterns.
 - Rule engine in `lintel-core`: rule metadata, typed options, severity, execution of query-based rules, and registration of rules from language packs and `lintel-rules`.
 - First rules (`python/` rules live in `lintel-python-pack`, `core/` rules in `lintel-rules`):
-  - `python/unresolved-import`: internal imports that resolve to nothing.
+  - `python/unresolved-import`: internal imports that resolve to nothing (error), and undeclared imports that match no internal module, stdlib module, or declared dependency (warning).
   - `core/circular-import`: import cycles between modules.
   - `python/unreferenced-symbol`: module-level definitions that nothing references. This ships conservative and documented, with exemptions for `__all__`, decorators, entry points, and test conventions. It is marked experimental in `lintel explain`. It can move to a later phase without blocking the others if the false-positive rate is too high.
 - Fixture projects for each rule, including tricky cases (re-exports, `__init__.py` imports, conditional imports).

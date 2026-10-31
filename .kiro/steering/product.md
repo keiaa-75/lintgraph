@@ -1,3 +1,9 @@
+---
+inclusion: auto
+name: product
+description: Lintel's problem statement, target users, design principles, goals, and non-goals. Use when proposing features, judging scope, or explaining why Lintel exists.
+---
+
 # Product Overview
 
 ## Summary

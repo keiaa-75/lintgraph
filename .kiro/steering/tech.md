@@ -1,3 +1,7 @@
+---
+inclusion: always
+---
+
 # Technology Stack
 
 Prefer the choices in this document over alternatives when suggesting or generating code. Where a choice is marked **provisional**, it can change, but not silently: raise it first.
@@ -97,12 +101,16 @@ Good tooling from the earliest releases is a requirement.
 - **Project root discovery:** walk upward to find `lintel.toml` or `.git`.
 - **Concurrency:** safe when several invocations run at once.
 
-## Python adapter (first language module)
+## Python adapter (first language pack)
 
 - **Supported Python version:** parse any Python 3 syntax. Use a bundled stdlib module list for Python 3.9 and later.
-- **Phase scope:** symbols and imports first (absolute, relative, aliased, `from` imports, `__all__`). Call edges come later.
+- **Phase scope:** symbols, imports (absolute, relative, aliased, `from` imports, `__all__`), and name references first. Call edges come later.
+- **Name references:** record every use of a name in load context (`foo`, `foo()`, decorators, base classes, default values, annotations) and attribute access on imported modules (`mod.foo`). Store them unresolved during extraction. The resolver links them to symbols. References are what `python/unreferenced-symbol` counts, so a function used only inside its own module is not reported as unused.
 - **Layouts:** flat layout, `src/` layout, packages with `__init__.py`, and namespace packages.
-- **Import classification:** internal, stdlib, or third-party. Only unresolved **internal** imports are errors. Third-party imports are reported as "external, unverified". Verification against a virtual environment is a later option.
+- **Import classification:** internal, stdlib, third-party, or undeclared. Only unresolved **internal** imports are errors. Verification against a virtual environment is a later option, and other language packs may need it sooner.
+- **Declared dependencies:** read them from `pyproject.toml` (`[project.dependencies]`, `[project.optional-dependencies]`, `[dependency-groups]`, and `[tool.poetry]` dependency tables). A top-level import that matches a declared dependency is third-party ("external, unverified"). One that matches nothing internal, stdlib, or declared is **undeclared**, and `python/unresolved-import` reports it as a warning: it is either a module that moved or a missing dependency.
+- **Distribution names vs import names:** a package's install name often differs from its import name (`pillow` imports as `PIL`, `pyyaml` as `yaml`, `beautifulsoup4` as `bs4`). Normalize names first (lowercase, `-` and `.` to `_`), then consult a small bundled mapping for common mismatches. A `known-third-party` config option covers the rest.
+- **No `pyproject.toml`:** classification falls back to internal, stdlib, or third-party, and nothing is reported as undeclared.
 - **Out of scope:** dynamic imports, `import *` expansion beyond simple cases, and runtime metaprogramming. Report these as "unknown" instead of guessing.
 - **Broken files:** index best-effort, flag the file, and never abort the whole run.
 

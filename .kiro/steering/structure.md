@@ -1,3 +1,7 @@
+---
+inclusion: always
+---
+
 # Project Structure
 
 ## Architecture overview
@@ -67,7 +71,7 @@ lintel/
 ### Dependency direction
  
 - `lintel-core` depends on no other Lintel crate and knows nothing about specific languages.
-- `lintel-config`, `lintel-rules`, `lintel-python`, and `lintel-report` depend on `lintel-core`, never on each other where avoidable.
+- `lintel-config`, `lintel-rules`, `lintel-python-pack`, and `lintel-report` depend on `lintel-core`, never on each other where avoidable.
 - `lintel-graph` depends on all of them and is the only crate that wires them together.
 - Adding a language means adding a new crate (for example `lintel-typescript-pack`) that implements the adapter trait. It must not require changes in `lintel-core`.
 
@@ -108,8 +112,8 @@ A first sketch to guide early work. Expect it to change as rules and optimizatio
 |---|---|---|
 | `files` | Tracked source files | `id`, `path`, `hash`, `size`, `mtime`, `language`, `parse_status` |
 | `symbols` | Definitions | `id`, `file_id`, `name`, `qualified_name`, `kind`, `line`, `exported` |
-| `imports` | Import statements | `id`, `file_id`, `target_module`, `target_file_id`, `imported_name`, `resolved_symbol_id`, `kind` (internal, stdlib, third-party, unknown), `line` |
-| `references` | Uses of symbols (later: call edges with arity) | `id`, `file_id`, `symbol_id`, `line` |
+| `imports` | Import statements | `id`, `file_id`, `target_module`, `target_file_id`, `imported_name`, `resolved_symbol_id`, `kind` (internal, stdlib, third-party, undeclared, unknown), `line` |
+| `references` | Uses of names, extracted in Phase 2 and resolved to symbols in Phase 3 (later: call edges with arity) | `id`, `file_id`, `name`, `symbol_id` (null until resolved), `line`, `column` |
 | `diagnostics` (later) | Normalized findings from external tools | `id`, `file_id`, `source`, `rule`, `severity`, `line`, `message` |
  
 Conventions: integer IDs, foreign keys on, an index for every column a rule filters or joins on, and deletion of a file's rows (cascading) before re-inserting its fresh extraction.
